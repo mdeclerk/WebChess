@@ -2,6 +2,8 @@
 
 Single-page chess app with a Python backend and a canvas-based UI. The server validates moves, returns notation and FEN, and provides a simple engine for black moves and analysis.
 
+![WebChess screenshot](docs/image.png)
+
 ## Quickstart (Docker)
 
 ```bash
