@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>WebChess MVP</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="min-h-screen bg-gradient-to-br from-[#f7f2ea] via-[#e9dfd1] to-[#d9cbb7] text-[#2b1f1a]">
+    <main id="app" class="mx-auto max-w-5xl px-4 py-8">
+      <header class="mb-6 flex flex-wrap items-end justify-between gap-3">
+        <h1 class="text-3xl font-semibold tracking-[0.18em]">WebChess MVP</h1>
+      </header>
+      <section class="flex flex-col gap-6 lg:flex-row">
+        <section class="flex flex-col gap-3">
+          <div
+            class="relative rounded-2xl bg-gradient-to-br from-[#6e3f22] via-[#8b5a35] to-[#6e3f22] p-4 shadow-[0_14px_28px_rgba(31,22,16,0.25)]"
+          >
+            <canvas
+              id="chess-board"
+              width="640"
+              height="640"
+              class="block h-auto max-w-[92vw] rounded-xl"
+              aria-label="Chess board"
+            ></canvas>
+            <div
+              id="game-overlay"
+              class="absolute inset-4 flex items-center justify-center rounded-xl bg-[rgba(19,14,10,0.62)] opacity-0 pointer-events-none transition-opacity duration-150"
+              aria-hidden="true"
+            >
+              <div class="flex flex-col items-center gap-3 text-center text-[#f6ead9]">
+                <div id="game-message" class="text-3xl font-semibold uppercase tracking-[0.2em]">Game Over</div>
+                <button
+                  id="restart-game"
+                  class="rounded-lg border border-[rgba(255,255,255,0.35)] bg-[rgba(246,234,217,0.12)] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.2em]"
+                  type="button"
+                >
+                  Restart
+                </button>
+              </div>
+            </div>
+          </div>
+          <div
+            class="flex items-center justify-between gap-2 rounded-full bg-[rgba(18,12,9,0.55)] px-3 py-1 text-[11px] text-[#f6ead9] shadow"
+          >
+            <span id="fen-value" class="truncate font-mono">Loading FEN...</span>
+            <div class="flex items-center gap-2">
+            <button
+              id="fen-copy"
+              class="rounded-full border border-[rgba(255,255,255,0.25)] px-2 py-0.5 text-[10px] uppercase tracking-[0.2em]"
+              type="button"
+            >
+              Copy
+            </button>
+            <span
+              id="fen-copy-feedback"
+              class="hidden text-[10px] uppercase tracking-[0.2em] text-[#f5d28b]"
+            >
+              Copied
+            </span>
+            </div>
+          </div>
+        </section>
+        <aside class="w-full lg:w-56 lg:h-[672px]">
+          <div
+            class="flex h-full flex-col rounded-2xl border border-[rgba(122,78,46,0.2)] bg-[rgba(249,242,233,0.85)] p-4 shadow-[0_10px_20px_rgba(31,22,16,0.12)]"
+          >
+            <div class="flex flex-col gap-4">
+              <div class="flex flex-col gap-2">
+                <button
+                  id="new-game"
+                  class="w-full rounded-lg border border-[rgba(122,78,46,0.25)] bg-[#f6ead9] px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#3f2b1d] shadow-sm transition hover:-translate-y-0.5"
+                  type="button"
+                >
+                  New Game
+                </button>
+                <button
+                  id="undo-move"
+                  class="w-full rounded-lg border border-[rgba(122,78,46,0.25)] bg-[#f6ead9] px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#3f2b1d] shadow-sm transition hover:-translate-y-0.5"
+                  type="button"
+                >
+                  Undo
+                </button>
+              </div>
+              <div class="flex flex-col gap-2">
+                <label for="engine-depth" class="text-[11px] uppercase tracking-[0.2em] text-[#4b3a2e]">
+                  Strength <span id="engine-depth-value" class="font-semibold">2</span>
+                </label>
+                <input
+                  id="engine-depth"
+                  type="range"
+                  min="1"
+                  max="4"
+                  step="1"
+                  value="2"
+                  class="accent-[#6e3f22]"
+                />
+                <div class="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-[#4b3a2e]">
+                  <span id="engine-thinking" class="hidden animate-pulse">Thinking...</span>
+                </div>
+              </div>
+            </div>
+            <hr class="my-4 border-[rgba(122,78,46,0.25)]" />
+            <div class="flex-1 min-h-0 overflow-hidden">
+              <ol id="move-list" class="h-full space-y-2 overflow-y-auto pb-6 pr-1 scroll-pb-6 text-sm"></ol>
+            </div>
+          </div>
+        </aside>
+      </section>
+    </main>
+    <script type="module" src="/js/app.js"></script>
+  </body>
+</html>
