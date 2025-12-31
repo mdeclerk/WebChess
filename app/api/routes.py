@@ -1,14 +1,21 @@
-from typing import List, Optional
+from fastapi import APIRouter
 
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, ConfigDict, Field
-
+from app.api.helpers import build_validate_response, en_passant_tuple, validate_engine_payload, validate_state_payload
+from app.api.schemas import (
+    EngineMovePayload,
+    EngineMoveResponse,
+    MoveCoord,
+    StatePayload,
+    ValidatePayload,
+    ValidateResponse,
+    WinProbabilityResponse,
+)
 from app.chess.base.board import Board
 from app.chess.base.move import Move
+from app.chess.base.notation import fen_from
 from app.chess.engine import move_to_uci, score_to_win_probability, search_best_move
 from app.chess.engine.evaluate import evaluate_board
-from app.chess.base.notation import fen_from, move_to_lan
-from app.chess.rules import apply_move, has_any_legal_move, is_in_check
+from app.chess.rules import apply_move
 
 router = APIRouter()
 
@@ -23,245 +30,6 @@ def health():
         Status payload indicating the API is reachable.
     """
     return {"status": "ok"}
-
-
-class MoveCoord(BaseModel):
-    file: int = Field(ge=0, le=7)
-    rank: int = Field(ge=0, le=7)
-
-
-class MovePayload(BaseModel):
-    from_: MoveCoord = Field(alias="from")
-    to: MoveCoord
-
-
-class StatePayload(BaseModel):
-    board: List[List[Optional[str]]]
-    turn: str
-    castling: str = "KQkq"
-    en_passant: Optional[MoveCoord] = None
-    halfmove: int = 0
-    fullmove: int = 1
-
-
-class ValidatePayload(StatePayload):
-    move: MovePayload
-
-
-class CastleMove(BaseModel):
-    rook_from: MoveCoord
-    rook_to: MoveCoord
-
-
-class ValidateResponse(BaseModel):
-    legal: bool
-    reason: str
-    notation: Optional[str] = None
-    fen: Optional[str] = None
-    castling: Optional[str] = None
-    en_passant: Optional[MoveCoord] = None
-    halfmove: Optional[int] = None
-    fullmove: Optional[int] = None
-    capture: Optional[MoveCoord] = None
-    castle: Optional[CastleMove] = None
-    promotion: Optional[str] = None
-    check: bool = False
-    game_over: bool = False
-    outcome: Optional[str] = None
-    winner: Optional[str] = None
-
-
-class EngineMovePayload(StatePayload):
-    depth: Optional[int] = None
-
-
-class EngineMoveResponse(BaseModel):
-    move: Optional[str] = None
-    from_: Optional[MoveCoord] = Field(default=None, alias="from")
-    to: Optional[MoveCoord] = None
-    depth: int
-    nodes: int
-    score: int
-    no_legal_moves: bool = False
-    error: Optional[str] = None
-
-    model_config = ConfigDict(populate_by_name=True)
-
-
-class WinProbabilityResponse(BaseModel):
-    white: float
-    black: float
-    score: int
-
-
-ENGINE_MIN_DEPTH = 1
-ENGINE_MAX_DEPTH = 4
-ENGINE_DEFAULT_DEPTH = 2
-
-
-def en_passant_tuple(en_passant: Optional[MoveCoord]):
-    """Converts an optional MoveCoord into a tuple for rule helpers.
-
-    Normalizes en passant inputs for domain functions.
-
-    Args:
-        en_passant: Optional en passant target square.
-
-    Returns:
-        (file, rank) tuple or None.
-    """
-    return (en_passant.file, en_passant.rank) if en_passant else None
-
-
-def validate_engine_payload(payload: EngineMovePayload) -> int:
-    """Validates engine payload basics and resolves search depth.
-
-    Fails fast on invalid engine requests with clear errors.
-
-    Args:
-        payload: Engine request payload.
-
-    Returns:
-        Resolved depth to use for search.
-
-    Raises:
-        HTTPException: If the payload is invalid or depth is out of range.
-    """
-    if payload.turn not in {"white", "black"}:
-        raise HTTPException(status_code=400, detail="invalid_turn")
-    if len(payload.board) != 8 or any(len(rank) != 8 for rank in payload.board):
-        raise HTTPException(status_code=400, detail="invalid_board")
-    depth = payload.depth if payload.depth is not None else ENGINE_DEFAULT_DEPTH
-    if depth < ENGINE_MIN_DEPTH or depth > ENGINE_MAX_DEPTH:
-        raise HTTPException(status_code=400, detail="invalid_depth")
-    return depth
-
-
-def build_fen(board: Board, turn: str, castling: str, en_passant, halfmove: int, fullmove: int):
-    """Builds a FEN string from a Board and state fields.
-
-    Keeps FEN construction consistent across endpoints.
-
-    Args:
-        board: Current board position.
-        turn: Side to move ("white" or "black").
-        castling: Castling availability string.
-        en_passant: Optional en passant target square.
-        halfmove: Halfmove clock.
-        fullmove: Fullmove number.
-
-    Returns:
-        FEN string describing the position.
-    """
-    return fen_from(board.to_matrix(), turn, castling, en_passant, halfmove, fullmove)
-
-
-def build_castle(result):
-    """Builds the castle move payload if castling occurred.
-
-    Shapes castle metadata for the API response.
-
-    Args:
-        result: Move application result dict.
-
-    Returns:
-        CastleMove payload or None.
-    """
-    if not result["castle"]:
-        return None
-    return CastleMove(
-        rook_from=MoveCoord(**result["castle"]["rook_from"]),
-        rook_to=MoveCoord(**result["castle"]["rook_to"]),
-    )
-
-
-def build_notation(move: Move, result):
-    """Creates LAN notation (or castling notation) for a validated move.
-
-    Returns a readable move label for the UI.
-
-    Args:
-        move: Move that was validated.
-        result: Move application result dict.
-
-    Returns:
-        Notation string such as "e2e4" or "O-O".
-    """
-    if result["castle"] and result["castle"]["rook_from"]["file"] == 7:
-        return "O-O"
-    if result["castle"] and result["castle"]["rook_from"]["file"] == 0:
-        return "O-O-O"
-    return move_to_lan(
-        move.from_file,
-        move.from_rank,
-        move.to_file,
-        move.to_rank,
-        result["promotion"],
-    )
-
-
-def build_validate_response(move: Move, payload: ValidatePayload, result) -> ValidateResponse:
-    """Assembles the validation response including check and game status.
-
-    Provides the UI with all derived state in one response.
-
-    Args:
-        move: Move that was validated.
-        payload: Incoming request payload.
-        result: Move application result dict.
-
-    Returns:
-        Fully populated validation response.
-    """
-    next_turn = "black" if payload.turn == "white" else "white"
-    in_check = is_in_check(result["board"], next_turn)
-    has_moves = has_any_legal_move(
-        result["board"],
-        next_turn,
-        result["castling"],
-        result["en_passant"],
-    )
-    game_over = not has_moves
-    outcome = None
-    winner = None
-    if game_over:
-        if in_check:
-            outcome = "checkmate"
-            winner = "white" if next_turn == "black" else "black"
-        else:
-            outcome = "stalemate"
-    return ValidateResponse(
-        legal=True,
-        reason="ok",
-        notation=build_notation(move, result),
-        fen=build_fen(
-            result["board"],
-            next_turn,
-            result["castling"],
-            result["en_passant"],
-            result["halfmove"],
-            result["fullmove"],
-        ),
-        castling=result["castling"],
-        en_passant=(
-            MoveCoord(file=result["en_passant"][0], rank=result["en_passant"][1])
-            if result["en_passant"]
-            else None
-        ),
-        halfmove=result["halfmove"],
-        fullmove=result["fullmove"],
-        capture=(
-            MoveCoord(file=result["capture"][0], rank=result["capture"][1])
-            if result["capture"]
-            else None
-        ),
-        castle=build_castle(result),
-        promotion=result["promotion"],
-        check=in_check,
-        game_over=game_over,
-        outcome=outcome,
-        winner=winner,
-    )
 
 
 @router.post("/validate", response_model=ValidateResponse)
@@ -355,11 +123,7 @@ def win_probability(payload: EngineMovePayload):
     Returns:
         Win probability response for White and Black.
     """
-    if payload.turn not in {"white", "black"}:
-        raise HTTPException(status_code=400, detail="invalid_turn")
-    if len(payload.board) != 8 or any(len(rank) != 8 for rank in payload.board):
-        raise HTTPException(status_code=400, detail="invalid_board")
-    
+    validate_state_payload(payload.turn, payload.board)
     board = Board.from_matrix(payload.board)
     score = evaluate_board(board)
     white = score_to_win_probability(score)
