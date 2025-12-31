@@ -38,7 +38,7 @@ Open: http://127.0.0.1:8000
 - `POST /api/fen` return FEN for a given board/state
 - `POST /api/validate` validate and apply a move
 - `POST /api/move` return an engine move with analysis metadata
-- `POST /api/win-probability` return win probabilities with analysis metadata
+- `POST /api/win-probability` return win probabilities from static evaluation
 
 ## Build tool `buildenv.sh`
 

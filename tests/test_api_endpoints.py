@@ -78,7 +78,6 @@ def test_win_probability_endpoint_is_deterministic_and_normalized():
         "en_passant": None,
         "halfmove": 0,
         "fullmove": 1,
-        "depth": 1,
     }
     r1 = client.post("/api/win-probability", json=payload)
     r2 = client.post("/api/win-probability", json=payload)
@@ -89,6 +88,10 @@ def test_win_probability_endpoint_is_deterministic_and_normalized():
     assert data1 == data2
     total = data1["white"] + data1["black"]
     assert abs(total - 1.0) < 1e-6
+    assert "depth" not in data1
+    assert "nodes" not in data1
+    assert "score" in data1
+    assert isinstance(data1["score"], int)
 
 
 def test_legal_pawn_double_step_returns_en_passant_and_fen_and_notation():
@@ -162,7 +165,7 @@ def test_engine_move_invalid_turn():
         "en_passant": None,
         "halfmove": 0,
         "fullmove": 1,
-        "depth": 1,
+
     }
     r = client.post("/api/move", json=payload)
     assert r.status_code == 400
@@ -182,6 +185,51 @@ def test_engine_move_invalid_board_shape():
     r = client.post("/api/move", json=payload)
     assert r.status_code == 400
     assert r.json()["detail"] == "invalid_board"
+
+
+def test_win_probability_material_advantage():
+    # White has extra queen - should favor white
+    board = [
+        ["r", "n", "b", None, "k", "b", "n", "r"],  # Black missing queen
+        list("pppppppp"),
+        [None] * 8,
+        [None] * 8,
+        [None] * 8,
+        [None] * 8,
+        list("PPPPPPPP"),
+        list("RNBQKBNR"),  # White has queen
+    ]
+    payload = {
+        "board": board,
+        "turn": "white",
+        "castling": "KQkq",
+        "en_passant": None,
+        "halfmove": 0,
+        "fullmove": 1,
+    }
+    r = client.post("/api/win-probability", json=payload)
+    assert r.status_code == 200
+    data = r.json()
+    assert data["white"] > data["black"]
+    assert data["score"] > 0  # Positive score favors white
+
+
+def test_win_probability_starting_position_roughly_equal():
+    payload = {
+        "board": initial_board_matrix(),
+        "turn": "white",
+        "castling": "KQkq",
+        "en_passant": None,
+        "halfmove": 0,
+        "fullmove": 1,
+    }
+    r = client.post("/api/win-probability", json=payload)
+    assert r.status_code == 200
+    data = r.json()
+    # Starting position should be roughly balanced
+    assert abs(data["white"] - 0.5) < 0.1
+    assert abs(data["black"] - 0.5) < 0.1
+    assert abs(data["score"]) < 100  # Within 1 pawn of equal
 
 
 def test_engine_move_invalid_depth():
@@ -226,7 +274,6 @@ def test_win_probability_invalid_turn():
         "en_passant": None,
         "halfmove": 0,
         "fullmove": 1,
-        "depth": 1,
     }
     r = client.post("/api/win-probability", json=payload)
     assert r.status_code == 400
@@ -241,7 +288,6 @@ def test_win_probability_invalid_board_shape():
         "en_passant": None,
         "halfmove": 0,
         "fullmove": 1,
-        "depth": 1,
     }
     r = client.post("/api/win-probability", json=payload)
     assert r.status_code == 400

@@ -6,6 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from app.chess.base.board import Board
 from app.chess.base.move import Move
 from app.chess.engine import move_to_uci, score_to_win_probability, search_best_move
+from app.chess.engine.evaluate import evaluate_board
 from app.chess.base.notation import fen_from, move_to_lan
 from app.chess.rules import apply_move, has_any_legal_move, is_in_check
 
@@ -90,8 +91,6 @@ class EngineMoveResponse(BaseModel):
 class WinProbabilityResponse(BaseModel):
     white: float
     black: float
-    depth: int
-    nodes: int
     score: int
 
 
@@ -345,34 +344,29 @@ def engine_move(payload: EngineMovePayload):
 
 @router.post("/win-probability", response_model=WinProbabilityResponse)
 def win_probability(payload: EngineMovePayload):
-    """Estimates win probabilities from the engine evaluation score.
+    """Estimates win probabilities from a static board evaluation.
 
-    Exposes a simple strength signal for the current position.
+    Provides an instant strength signal for the current position using
+    static evaluation without search. Much faster than move generation.
 
     Args:
-        payload: Game state and optional depth.
+        payload: Game state (depth parameter ignored if present).
 
     Returns:
         Win probability response for White and Black.
     """
-    depth = validate_engine_payload(payload)
+    if payload.turn not in {"white", "black"}:
+        raise HTTPException(status_code=400, detail="invalid_turn")
+    if len(payload.board) != 8 or any(len(rank) != 8 for rank in payload.board):
+        raise HTTPException(status_code=400, detail="invalid_board")
+    
     board = Board.from_matrix(payload.board)
-    _, meta = search_best_move(
-        board,
-        payload.turn,
-        payload.castling,
-        en_passant_tuple(payload.en_passant),
-        payload.halfmove,
-        payload.fullmove,
-        depth,
-    )
-    white = score_to_win_probability(meta["score"])
+    score = evaluate_board(board)
+    white = score_to_win_probability(score)
     return WinProbabilityResponse(
         white=white,
         black=1.0 - white,
-        depth=meta["depth"],
-        nodes=meta["nodes"],
-        score=meta["score"],
+        score=score,
     )
 
 
