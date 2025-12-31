@@ -29,7 +29,9 @@ Open: http://127.0.0.1:8000
 - Rules engine with castling, en passant, and promotion (auto-queen)
 - Move list and FEN panel synced after each move
 - Automatic black moves via a built-in engine (depth slider 1-4)
+- Win probability bar based on static position evaluation
 - Game-over detection (checkmate / stalemate) surfaced in responses
+- Undo and New Game controls
 - Tailwind CSS loaded via CDN (no build step)
 
 ## API Endpoints
