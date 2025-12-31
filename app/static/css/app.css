@@ -108,6 +108,8 @@ body {
   pointer-events: none;
   z-index: 2;
   --white-pct: 50%;
+  border: 1px solid rgba(122, 78, 46, 0.2);
+  box-shadow: 0 10px 20px rgba(31, 22, 16, 0.12);
 }
 
 .win-probability-segment {
