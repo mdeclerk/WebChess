@@ -1,4 +1,5 @@
 import {
+  canvas,
   newGameButton,
   undoButton,
   restartButton,
@@ -7,6 +8,9 @@ import {
   engineThinking,
   fenCopyButton,
   fenCopyFeedback,
+  boardFrame,
+  winProbabilityBar,
+  squareSize,
 } from "./context.js";
 import {
   state,
@@ -21,10 +25,11 @@ import {
 } from "./state.js";
 import { loadSprites, updatePieces, renderFrame } from "./render.js";
 import { applyValidatedMove, bindInputHandlers } from "./interaction.js";
-import { requestFen, requestEngineMove, validateMove } from "./api.js";
+import { requestFen, requestEngineMove, validateMove, requestWinProbability } from "./api.js";
 
 let fenCopyTimer = null;
 let autoMoveTimer = null;
+let winProbabilityRequestId = 0;
 
 const setEngineThinking = (thinking) => {
   state.engineThinking = thinking;
@@ -41,6 +46,44 @@ const cancelPendingEngine = () => {
     clearTimeout(autoMoveTimer);
     autoMoveTimer = null;
   }
+};
+
+const clampProbability = (value) => Math.min(1, Math.max(0, value));
+
+const setWinProbability = (whiteValue) => {
+  const white = clampProbability(whiteValue);
+  const black = clampProbability(1 - white);
+  state.winProbability = { white, black, hasValue: true };
+  if (winProbabilityBar) {
+    winProbabilityBar.style.setProperty("--white-pct", `${white * 100}%`);
+  }
+};
+
+const refreshWinProbability = async () => {
+  const requestId = winProbabilityRequestId + 1;
+  winProbabilityRequestId = requestId;
+  const result = await requestWinProbability();
+  if (requestId !== winProbabilityRequestId) return;
+  if (!result || !Number.isFinite(result.white)) {
+    return;
+  }
+  setWinProbability(result.white);
+};
+
+const updateProbabilityBarLayout = () => {
+  if (!winProbabilityBar || !boardFrame || !canvas) return;
+  const layoutSection = document.querySelector("#app > section");
+  const frameRect = boardFrame.getBoundingClientRect();
+  const canvasRect = canvas.getBoundingClientRect();
+  if (!canvasRect.width || !canvasRect.height) return;
+  const scale = canvasRect.width / canvas.width;
+  const barWidth = squareSize * scale * 0.5;
+  const gapValue = layoutSection ? getComputedStyle(layoutSection).gap : "24px";
+  const panelGap = Number.parseFloat(gapValue) || 24;
+  winProbabilityBar.style.left = `${-(panelGap + barWidth)}px`;
+  winProbabilityBar.style.top = "0px";
+  winProbabilityBar.style.width = `${barWidth}px`;
+  winProbabilityBar.style.height = `${frameRect.height}px`;
 };
 
 const resetGame = () => {
@@ -62,6 +105,7 @@ const resetGame = () => {
   renderMoveList();
   updateFenOutput("Loading FEN...");
   requestFen();
+  refreshWinProbability();
 };
 
 const updateEngineDepth = (value) => {
@@ -183,6 +227,7 @@ const init = () => {
   updateEngineDepth(engineDepthInput?.value ?? state.engineDepth);
 
   document.addEventListener("chess:move-applied", () => {
+    refreshWinProbability();
     if (gameState.gameOver) return;
     if (state.turn === "Black") {
       scheduleComputerMove();
@@ -205,6 +250,7 @@ const init = () => {
       const undone = undoPlayerTurn();
       if (undone) {
         updateFenOutput(gameState.fen);
+        refreshWinProbability();
       }
     });
   }
@@ -216,6 +262,10 @@ const init = () => {
   if (restartButton) {
     restartButton.addEventListener("click", resetGame);
   }
+
+  updateProbabilityBarLayout();
+  window.addEventListener("resize", updateProbabilityBarLayout);
+  refreshWinProbability();
 
   requestAnimationFrame(tick);
 };

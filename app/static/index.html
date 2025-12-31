@@ -15,8 +15,13 @@
       <section class="flex flex-col gap-6 lg:flex-row">
         <section class="flex flex-col gap-3">
           <div
+            id="board-frame"
             class="relative rounded-2xl bg-gradient-to-br from-[#6e3f22] via-[#8b5a35] to-[#6e3f22] p-4 shadow-[0_14px_28px_rgba(31,22,16,0.25)]"
           >
+            <div id="win-probability-bar" class="win-probability-bar" aria-hidden="true">
+              <div id="win-probability-black" class="win-probability-segment win-probability-black"></div>
+              <div id="win-probability-white" class="win-probability-segment win-probability-white"></div>
+            </div>
             <canvas
               id="chess-board"
               width="640"

@@ -73,4 +73,28 @@ const requestEngineMove = async (depth = null) => {
   return response.json();
 };
 
-export { validateMove, requestEngineMove, requestFen };
+const requestWinProbability = async () => {
+  const payload = {
+    board: boardMatrixFromPieces(),
+    turn: state.turn.toLowerCase(),
+    castling: gameState.castling,
+    en_passant: gameState.enPassant,
+    halfmove: gameState.halfmove,
+    fullmove: gameState.fullmove,
+  };
+  try {
+    const response = await fetch("/api/win-probability", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      return null;
+    }
+    return response.json();
+  } catch (error) {
+    return null;
+  }
+};
+
+export { validateMove, requestEngineMove, requestFen, requestWinProbability };

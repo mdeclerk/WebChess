@@ -99,6 +99,33 @@ body {
   height: auto;
 }
 
+.win-probability-bar {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  border-radius: 16px;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 2;
+  --white-pct: 50%;
+}
+
+.win-probability-segment {
+  flex: 0 0 auto;
+  width: 100%;
+  transition: height 1000ms ease-out;
+}
+
+.win-probability-black {
+  background: #000;
+  height: calc(100% - var(--white-pct));
+}
+
+.win-probability-white {
+  background: #fff;
+  height: var(--white-pct);
+}
+
 .side-stack {
   display: flex;
   flex-direction: column;

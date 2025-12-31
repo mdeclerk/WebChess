@@ -12,6 +12,11 @@ const state = {
   engineThinking: false,
   engineRequestId: 0,
   engineDepth: 2,
+  winProbability: {
+    white: 0.5,
+    black: 0.5,
+    hasValue: false,
+  },
 };
 
 const gameState = {
