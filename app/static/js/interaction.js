@@ -69,7 +69,11 @@ const applyValidatedMove = (piece, originFile, originRank, targetFile, targetRan
   snapPiece(piece, targetFile, targetRank);
   toggleTurn();
   if (result.notation) {
-    appendMove(result.notation, { capture: Boolean(result.capture), check: Boolean(result.check) });
+    appendMove(result.notation, {
+      capture: Boolean(result.capture),
+      check: Boolean(result.check),
+      outcome: result.outcome,
+    });
   }
   if (result.castling) {
     gameState.castling = result.castling;

@@ -137,7 +137,19 @@ const appendMoveEntry = (entryData, ply) => {
     badge.textContent = "Capture";
     entry.appendChild(badge);
   }
-  if (entryData.check) {
+  if (entryData.outcome === "checkmate") {
+    const badge = document.createElement("span");
+    badge.className =
+      "rounded-full bg-[#d64545] px-2 py-0.5 text-[10px] uppercase tracking-[0.2em] text-[#f6ead9]";
+    badge.textContent = "Checkmate";
+    entry.appendChild(badge);
+  } else if (entryData.outcome === "stalemate") {
+    const badge = document.createElement("span");
+    badge.className =
+      "rounded-full bg-[#8b5a35] px-2 py-0.5 text-[10px] uppercase tracking-[0.2em] text-[#f6ead9]";
+    badge.textContent = "Stalemate";
+    entry.appendChild(badge);
+  } else if (entryData.check) {
     const badge = document.createElement("span");
     badge.className =
       "rounded-full bg-[#f5e1c6] px-2 py-0.5 text-[10px] uppercase tracking-[0.2em] text-[#7b3c1c]";
@@ -153,6 +165,7 @@ const appendMove = (notation, meta = {}) => {
     notation,
     capture: Boolean(meta.capture),
     check: Boolean(meta.check),
+    outcome: meta.outcome,
   };
   gameState.moveHistory.push(entryData);
   appendMoveEntry(entryData, gameState.moveHistory.length);
