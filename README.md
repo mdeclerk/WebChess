@@ -4,11 +4,20 @@ Single-page chess app with a Python backend and a canvas-based UI. The server va
 
 ![WebChess screenshot](docs/image.png)
 
+Parts of this project have been co-programmed by AI using [OpenSpec](https://github.com/Fission-AI/OpenSpec).
+
+## Prerequisites
+
+- Docker (Docker Desktop is fine) to run the dev server and tests via `./buildenv.sh`.
+- A Unix-like shell to run `./buildenv.sh` (macOS/Linux; on Windows use WSL).
+- Port `8000` available on your machine.
+- Internet access in your browser (Tailwind CSS is loaded via CDN).
+
 ## Quickstart (Docker)
 
 ```bash
-./buildenv.sh init
-./buildenv.sh start
+./buildenv.sh init    # Create docker image 'webchess-dev'
+./buildenv.sh start   # Start uvicorn server in container
 ```
 
 Open: http://127.0.0.1:8000
@@ -23,80 +32,27 @@ Open: http://127.0.0.1:8000
 - Game-over detection (checkmate / stalemate) surfaced in responses
 - Tailwind CSS loaded via CDN (no build step)
 
-## API Overview
+## API Endpoints
 
-Endpoints:
 - `GET /api/health` health check
 - `POST /api/fen` return FEN for a given board/state
 - `POST /api/validate` validate and apply a move
 - `POST /api/move` return an engine move with analysis metadata
 - `POST /api/win-probability` return win probabilities with analysis metadata
 
-### Coordinate and board conventions
+## Build tool `buildenv.sh`
 
-- `file`: `0..7` corresponds to `a..h`
-- `rank`: `0..7` corresponds to `8..1` (rank 0 is the top of the board)
-- `board` is an 8x8 matrix indexed as `board[rank][file]`
-- piece codes: uppercase = white (`"P"`), lowercase = black (`"p"`)
-- `turn` is `"white"` or `"black"`
-
-### `POST /api/validate`
-
-Request shape (minimal example):
-
-```json
-{
-  "board": [["r","n","b","q","k","b","n","r"], ["p","p","p","p","p","p","p","p"], [null,null,null,null,null,null,null,null], [null,null,null,null,null,null,null,null], [null,null,null,null,null,null,null,null], [null,null,null,null,null,null,null,null], ["P","P","P","P","P","P","P","P"], ["R","N","B","Q","K","B","N","R"]],
-  "turn": "white",
-  "castling": "KQkq",
-  "en_passant": null,
-  "halfmove": 0,
-  "fullmove": 1,
-  "move": {"from": {"file": 4, "rank": 6}, "to": {"file": 4, "rank": 4}}
-}
-```
-
-Response highlights:
-- `legal` + `reason` (stable reason codes like `no_piece`, `wrong_color`, `occupied_by_ally`, `king_in_check`, ...)
-- `notation` (LAN, e.g. `e2e4`, castling as `O-O` / `O-O-O`)
-- `fen` (next-turn position)
-- state updates: `castling`, `en_passant`, `halfmove`, `fullmove`
-- capture/castle/promotion metadata when applicable
-- game end: `game_over`, `outcome` (`checkmate|stalemate`), `winner`
-
-### `POST /api/move`
-
-Request matches the game state payload and accepts an optional `depth` (1-4). The response includes:
-- `move` in UCI format (e.g. `e2e4`)
-- `from`/`to` coordinates
-- analysis metadata: `depth`, `nodes`, `score`
-
-### `POST /api/win-probability`
-
-Request matches the game state payload and accepts an optional `depth` (1-4). The response includes:
-- `white` and `black` win probabilities that sum to 1.0
-- analysis metadata: `depth`, `nodes`, `score`
-
-## Running tests
+`./buildenv.sh` is a small helper wrapper around Docker so you don’t need a local Python install. It builds a dev image and runs commands with the repo mounted into the container.
 
 ```bash
-./buildenv.sh test
+./buildenv.sh init 		# build the `webchess-dev` image
+./buildenv.sh bash 		# open an interactive shell in the container
+./buildenv.sh test 		# run `pytest` in the container
+./buildenv.sh start 	# run the FastAPI app via Uvicorn on port `8000` (with `--reload`)
+./buildenv.sh stop 		# stop running containers based on the image
 ```
 
-Deterministic seed (optional):
-
-```bash
-PYTEST_DETERMINISTIC_SEED=42 ./buildenv.sh test
-```
-
-## VS Code tasks
-
-Tasks live in `.vscode/tasks.json`:
-- `Init Docker Image`
-- `Docker Bash`
-- `Run Tests`
-- `Start Uvicorn`
-- `Stop Uvicorn`
+Commands are available as VS Code tasks in `.vscode/tasks.json`.
 
 ## Project structure
 - `app/chess/` rules, notation, and engine
