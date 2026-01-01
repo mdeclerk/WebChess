@@ -13,7 +13,7 @@ Parts of this project have been co-programmed by AI using [OpenSpec](https://git
 - Port `8000` available on your machine.
 - Internet access in your browser (Tailwind CSS is loaded via CDN).
 
-## Quickstart (Docker)
+## Quickstart
 
 ```bash
 ./buildenv.sh init    # Create docker image 'webchess-dev'
@@ -22,17 +22,16 @@ Parts of this project have been co-programmed by AI using [OpenSpec](https://git
 
 Open: http://127.0.0.1:8000
 
-## Features
-- Canvas-rendered board with textured tiles and piece sprites
-- Drag-and-drop moves with animated snapping
-- Live move validation with legal/illegal feedback
-- Rules engine with castling, en passant, and promotion (auto-queen)
-- Move list and FEN panel synced after each move
-- Automatic black moves via a built-in engine (depth slider 1-4)
-- Win probability bar based on static position evaluation
-- Game-over detection (checkmate / stalemate) surfaced in responses
-- Undo and New Game controls
-- Tailwind CSS loaded via CDN (no build step)
+## Chess engine
+The engine uses a basic minimax search with alpha-beta pruning: it generates legal moves, applies each move to a cloned game state, then recursively searches to a fixed depth, alternating between maximizing (black) and minimizing (white) scores. At the leaf depth (or terminal positions like checkmate/stalemate), it returns a static evaluation score, and the root move with the best score is chosen as the engine move. There are no major improvements yet (no move ordering or transposition tables).
+
+The evaluation is a straightforward material-and-position heuristic that totals piece values plus simple positional bonuses. It does not account for advanced concepts like king safety, pawn structure, or tactical threats; the score is meant to be a quick, readable signal for the minimax search rather than a strong chess engine assessment.
+
+## Project structure
+- `app/chess/` rules, notation, and engine
+- `app/api/` API routes and schemas
+- `app/static/` frontend assets (HTML/CSS/JS + piece SVGs)
+- `tests/` pytest test suite
 
 ## API Endpoints
 
@@ -55,9 +54,3 @@ Open: http://127.0.0.1:8000
 ```
 
 Commands are available as VS Code tasks in `.vscode/tasks.json`.
-
-## Project structure
-- `app/chess/` rules, notation, and engine
-- `app/api/` API routes and schemas
-- `app/static/` frontend assets (HTML/CSS/JS + piece SVGs)
-- `tests/` pytest test suite
