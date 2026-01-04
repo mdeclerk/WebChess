@@ -115,5 +115,5 @@ class Board:
         Returns:
             New Board with copied grid references.
         """
-        copied = [[cell for cell in row] for row in self.grid]
+        copied = [list(row) for row in self.grid]
         return Board(copied)

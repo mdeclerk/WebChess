@@ -49,6 +49,7 @@ The evaluation is a straightforward material-and-position heuristic that totals 
 ./buildenv.sh init 		# build the `webchess-dev` image
 ./buildenv.sh bash 		# open an interactive shell in the container
 ./buildenv.sh test 		# run `pytest` in the container
+./buildenv.sh lint 		# run `pylint` in the container
 ./buildenv.sh start 	# run the FastAPI app via Uvicorn on port `8000` (with `--reload`)
 ./buildenv.sh stop 		# stop running containers based on the image
 ```

@@ -1,6 +1,6 @@
 import pytest
 
-from app.chess.base.board import Board
+from app.chess.base.board import Board, Piece
 from app.chess.base.move import Move
 from app.chess.rules import (
     is_legal_move,
@@ -11,7 +11,7 @@ from app.chess.rules import (
     update_castling_rights,
 )
 from app.chess.base import notation
-from app.chess.rules.rules import is_square_attacked
+from app.chess.rules.rules import attacked_squares_for_piece, is_square_attacked
 
 
 def empty_board():
@@ -222,3 +222,116 @@ def test_pseudo_legal_rook_blocked_by_ally():
 def test_has_any_legal_move_true():
     b = board_from_positions({(4, 7): "K", (0, 0): "k"})
     assert has_any_legal_move(b, "white", "-", None) is True
+
+
+def test_illegal_move_when_piece_blocked():
+    b = board_from_positions({(2, 7): "B", (3, 6): "P", (4, 7): "K", (4, 0): "k"})
+    legal, reason, _ = is_legal_move(b, Move(2, 7, 4, 5), "white", "-", None)
+    assert not legal and reason == "illegal_move"
+
+
+def test_king_missing_is_rejected():
+    b = board_from_positions({(0, 0): "k", (0, 7): "R"})
+    legal, reason, _ = is_legal_move(b, Move(0, 7, 0, 6), "white", "-", None)
+    assert not legal and reason == "king_missing"
+
+
+def test_attacked_squares_for_queen_blocked_ray():
+    b = board_from_positions({(3, 4): "Q", (3, 2): "P", (4, 7): "K", (0, 0): "k"})
+    queen = b.piece_at(3, 4)
+    moves = attacked_squares_for_piece(b, 3, 4, queen)
+    assert any(m.to_file == 3 and m.to_rank == 3 for m in moves)
+    assert any(m.to_file == 3 and m.to_rank == 2 for m in moves)
+    assert not any(m.to_file == 3 and m.to_rank == 1 for m in moves)
+
+
+def test_attacked_squares_for_unknown_piece_returns_empty():
+    b = board_from_positions({(4, 7): "K", (0, 0): "k"})
+    moves = attacked_squares_for_piece(b, 4, 7, Piece("X"))
+    assert moves == []
+
+
+def test_is_in_check_false_when_king_missing():
+    b = board_from_positions({(0, 0): "k"})
+    assert is_in_check(b, "white") is False
+
+
+def test_pseudo_legal_moves_unknown_piece_returns_empty():
+    b = board_from_positions({(4, 7): "K", (0, 0): "k"})
+    moves = pseudo_legal_moves_for_piece(b, 4, 7, Piece("X"))
+    assert moves == []
+
+
+def test_illegal_castle_wrong_rank_and_wrong_file():
+    b = board_from_positions({(4, 6): "K", (0, 0): "k"})
+    legal, reason, _ = is_legal_move(b, Move(4, 6, 6, 6), "white", "KQ", None)
+    assert not legal and reason == "illegal_castle"
+
+    b = board_from_positions({(3, 7): "K", (0, 0): "k"})
+    legal, reason, _ = is_legal_move(b, Move(3, 7, 5, 7), "white", "KQ", None)
+    assert not legal and reason == "illegal_castle"
+
+
+def test_castle_rejected_when_king_in_check():
+    b = board_from_positions({(4, 7): "K", (7, 7): "R", (4, 0): "r", (0, 0): "k"})
+    legal, reason, _ = is_legal_move(b, Move(4, 7, 6, 7), "white", "KQ", None)
+    assert not legal and reason == "king_in_check"
+
+
+def test_update_castling_rights_black_king_and_rooks_and_capture():
+    class Dummy:
+        def __init__(self, kind, color):
+            self.kind = kind
+            self.color = color
+
+    rights = update_castling_rights("KQkq", Move(4, 0, 4, 1), moving_piece=Dummy("K", "black"), captured_piece=None)
+    assert rights == "KQ"
+
+    rights = update_castling_rights("KQkq", Move(0, 0, 0, 1), moving_piece=Dummy("R", "black"), captured_piece=None)
+    assert rights == "KQk"
+
+    rights = update_castling_rights("KQkq", Move(7, 0, 7, 1), moving_piece=Dummy("R", "black"), captured_piece=None)
+    assert rights == "KQq"
+
+    rights = update_castling_rights(
+        "KQkq",
+        Move(0, 7, 0, 0),
+        moving_piece=Dummy("R", "white"),
+        captured_piece=Dummy("R", "black"),
+    )
+    assert rights == "Kk"
+
+    rights = update_castling_rights(
+        "KQkq",
+        Move(7, 7, 7, 0),
+        moving_piece=Dummy("R", "white"),
+        captured_piece=Dummy("R", "black"),
+    )
+    assert rights == "Qq"
+
+    rights = update_castling_rights(
+        "KQkq",
+        Move(0, 0, 0, 7),
+        moving_piece=Dummy("R", "black"),
+        captured_piece=Dummy("R", "white"),
+    )
+    assert rights == "Kk"
+
+
+def test_apply_move_capture_and_castle_move():
+    b = board_from_positions({(0, 6): "P", (1, 5): "p", (4, 7): "K", (4, 0): "k"})
+    move = Move(0, 6, 1, 5)
+    ok, result = apply_move(b, move, "white", "-", None, halfmove=0, fullmove=1)
+    assert ok and result["capture"] == (1, 5)
+
+    b2 = board_from_positions({(4, 7): "K", (0, 7): "R", (0, 0): "k"})
+    move2 = Move(4, 7, 2, 7)
+    ok2, result2 = apply_move(b2, move2, "white", "KQ", None, halfmove=0, fullmove=1)
+    assert ok2 and result2["castle"] is not None
+    assert b2.piece_at(3, 7) is not None
+
+    b3 = board_from_positions({(4, 7): "K", (7, 7): "R", (0, 0): "k"})
+    move3 = Move(4, 7, 6, 7)
+    ok3, result3 = apply_move(b3, move3, "white", "KQ", None, halfmove=0, fullmove=1)
+    assert ok3 and result3["castle"] is not None
+    assert b3.piece_at(5, 7) is not None

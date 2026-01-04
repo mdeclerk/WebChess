@@ -2,7 +2,13 @@ from typing import Optional
 
 from fastapi import HTTPException
 
-from app.api.schemas import CastleMove, EngineMovePayload, MoveCoord, ValidatePayload, ValidateResponse
+from app.api.schemas import (
+    CastleMove,
+    EngineMovePayload,
+    MoveCoord,
+    ValidatePayload,
+    ValidateResponse,
+)
 from app.chess.base.board import Board
 from app.chess.base.move import Move
 from app.chess.base.notation import fen_from, move_to_lan

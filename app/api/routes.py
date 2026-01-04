@@ -1,6 +1,11 @@
 from fastapi import APIRouter
 
-from app.api.helpers import build_validate_response, en_passant_tuple, validate_engine_payload, validate_state_payload
+from app.api.helpers import (
+    build_validate_response,
+    en_passant_tuple,
+    validate_engine_payload,
+    validate_state_payload,
+)
 from app.api.schemas import (
     EngineMovePayload,
     EngineMoveResponse,
@@ -48,8 +53,8 @@ def validate_move(payload: ValidatePayload):
     move = Move(
         from_file=payload.move.from_.file,
         from_rank=payload.move.from_.rank,
-        to_file=payload.move.to.file,
-        to_rank=payload.move.to.rank,
+        to_file=payload.move.to_.file,
+        to_rank=payload.move.to_.rank,
     )
     en_passant = en_passant_tuple(payload.en_passant)
     legal, result = apply_move(

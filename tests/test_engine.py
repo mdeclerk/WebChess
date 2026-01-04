@@ -3,26 +3,7 @@ from app.chess.base.move import Move
 from app.chess.engine.search import MATE_SCORE, search_best_move, terminal_score
 from app.chess.engine.moves import legal_moves, move_to_uci, move_sort_key
 from app.chess.rules import is_legal_move
-
-
-def initial_board_matrix():
-    return [
-        list("rnbqkbnr"),
-        list("pppppppp"),
-        [None] * 8,
-        [None] * 8,
-        [None] * 8,
-        [None] * 8,
-        list("PPPPPPPP"),
-        list("RNBQKBNR"),
-    ]
-
-
-def board_from_positions(positions):
-    b = [[None for _ in range(8)] for _ in range(8)]
-    for (f, r), code in positions.items():
-        b[r][f] = code
-    return Board.from_matrix(b)
+from conftest import initial_board_matrix, board_from_positions
 
 
 

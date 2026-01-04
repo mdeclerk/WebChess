@@ -14,7 +14,9 @@ class MovePayload(BaseModel):
     """Move payload with origin and destination coordinates."""
 
     from_: MoveCoord = Field(alias="from")
-    to: MoveCoord
+    to_: MoveCoord = Field(alias="to")
+
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class StatePayload(BaseModel):
@@ -72,7 +74,7 @@ class EngineMoveResponse(BaseModel):
 
     move: Optional[str] = None
     from_: Optional[MoveCoord] = Field(default=None, alias="from")
-    to: Optional[MoveCoord] = None
+    to_: Optional[MoveCoord] = Field(default=None, alias="to")
     depth: int
     nodes: int
     score: int

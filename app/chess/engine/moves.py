@@ -2,7 +2,7 @@ from typing import List, Optional, Tuple
 
 from app.chess.base.move import Move
 from app.chess.base.board import Board
-from app.chess.rules import is_legal_move, pseudo_legal_moves_for_piece
+from app.chess.rules import generate_legal_moves
 
 
 def legal_moves(
@@ -24,20 +24,7 @@ def legal_moves(
     Returns:
         Sorted list of legal moves.
     """
-    moves: List[Move] = []
-    for rank in range(8):
-        for file in range(8):
-            piece = board.piece_at(file, rank)
-            if not piece or piece.color != color:
-                continue
-            candidates = pseudo_legal_moves_for_piece(board, file, rank, piece, en_passant)
-            if piece.kind == "K":
-                candidates.append(Move(file, rank, file + 2, rank))
-                candidates.append(Move(file, rank, file - 2, rank))
-            for move in candidates:
-                legal, _, _ = is_legal_move(board, move, color, castling_rights, en_passant)
-                if legal:
-                    moves.append(move)
+    moves = list(generate_legal_moves(board, color, castling_rights, en_passant))
     return sorted(moves, key=move_sort_key)
 
 

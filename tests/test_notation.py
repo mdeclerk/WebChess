@@ -1,17 +1,9 @@
 from app.chess.base import notation
+from conftest import initial_board_matrix
 
 
 def test_fen_initial_position():
-    board = [
-        list("rnbqkbnr"),
-        list("pppppppp"),
-        [None] * 8,
-        [None] * 8,
-        [None] * 8,
-        [None] * 8,
-        list("PPPPPPPP"),
-        list("RNBQKBNR"),
-    ]
+    board = initial_board_matrix()
     fen = notation.fen_from(board, "white", "KQkq", None, 0, 1)
     assert fen == "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 

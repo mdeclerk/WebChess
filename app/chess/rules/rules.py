@@ -169,6 +169,40 @@ def is_in_check(board: Board, color: str) -> bool:
     )
 
 
+def generate_legal_moves(
+    board: Board,
+    color: str,
+    castling_rights: str,
+    en_passant: Optional[Tuple[int, int]],
+):
+    """Yields all legal moves for the side to move.
+
+    Generator for memory-efficient move iteration.
+
+    Args:
+        board: Current board position.
+        color: Side to move.
+        castling_rights: Castling availability string.
+        en_passant: Optional en passant target square.
+
+    Yields:
+        Legal moves one at a time.
+    """
+    for rank in range(8):
+        for file in range(8):
+            piece = board.piece_at(file, rank)
+            if not piece or piece.color != color:
+                continue
+            candidates = pseudo_legal_moves_for_piece(board, file, rank, piece, en_passant)
+            if piece.kind == "K":
+                candidates.append(Move(file, rank, file + 2, rank))
+                candidates.append(Move(file, rank, file - 2, rank))
+            for move in candidates:
+                legal, _, _ = is_legal_move(board, move, color, castling_rights, en_passant)
+                if legal:
+                    yield move
+
+
 def has_any_legal_move(
     board: Board,
     color: str,
@@ -190,20 +224,7 @@ def has_any_legal_move(
     Returns:
         True if at least one legal move exists.
     """
-    for rank in range(8):
-        for file in range(8):
-            piece = board.piece_at(file, rank)
-            if not piece or piece.color != color:
-                continue
-            candidates = pseudo_legal_moves_for_piece(board, file, rank, piece, en_passant)
-            if piece.kind == "K":
-                candidates.append(Move(file, rank, file + 2, rank))
-                candidates.append(Move(file, rank, file - 2, rank))
-            for move in candidates:
-                legal, _, _ = is_legal_move(board, move, color, castling_rights, en_passant)
-                if legal:
-                    return True
-    return False
+    return any(generate_legal_moves(board, color, castling_rights, en_passant))
 
 
 def pseudo_legal_moves_for_piece(
@@ -361,7 +382,9 @@ def is_legal_move(
             return False, "rook_missing", special
         if any(board.piece_at(f, rank) for f in between):
             return False, "castle_blocked", special
-        if is_square_attacked(board, move.from_file, rank, "black" if color == "white" else "white"):
+        if is_square_attacked(
+            board, move.from_file, rank, "black" if color == "white" else "white"
+        ):
             return False, "king_in_check", special
         for f in pass_through[1:]:
             if is_square_attacked(board, f, rank, "black" if color == "white" else "white"):
@@ -401,7 +424,9 @@ def is_legal_move(
     king_pos = find_king(test_board, color)
     if not king_pos:
         return False, "king_missing", special
-    if is_square_attacked(test_board, king_pos[0], king_pos[1], "black" if color == "white" else "white"):
+    if is_square_attacked(
+        test_board, king_pos[0], king_pos[1], "black" if color == "white" else "white"
+    ):
         return False, "king_in_check", special
 
     return True, "ok", special

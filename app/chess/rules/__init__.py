@@ -1,5 +1,6 @@
 from .rules import (
     apply_move,
+    generate_legal_moves,
     has_any_legal_move,
     is_in_check,
     is_legal_move,
@@ -9,6 +10,7 @@ from .rules import (
 
 __all__ = [
     "apply_move",
+    "generate_legal_moves",
     "has_any_legal_move",
     "is_in_check",
     "is_legal_move",

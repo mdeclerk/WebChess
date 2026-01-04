@@ -47,10 +47,21 @@
       }
     },
     {
-      "label": "Run Tests",
+      "label": "Run pytest",
       "type": "shell",
-      "command": "./buildenv.sh test",
+      "command": "./buildenv.sh pytest",
       "group": "test",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "Run pylint",
+      "type": "shell",
+      "command": "./buildenv.sh pylint",
+	  "group": "test",
       "problemMatcher": [],
       "presentation": {
         "reveal": "always",

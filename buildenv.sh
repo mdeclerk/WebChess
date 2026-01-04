@@ -13,6 +13,7 @@ Commands:
   start      Run Uvicorn in Docker (foreground)
   stop       Stop running containers based on the image
   test       Run pytest in Docker
+  lint       Run pylint in Docker
   bash       Start an interactive shell in Docker
 USAGE
 }
@@ -37,8 +38,11 @@ case "$1" in
   stop)
     docker ps -q --filter ancestor="${IMAGE_NAME}" | xargs -r docker stop
     ;;
-  test)
+  test|pytest)
     docker run --rm -v "${ROOT_DIR}:/app" -w /app "${IMAGE_NAME}" python -m pytest -q
+    ;;
+  lint|pylint)
+    docker run --rm -v "${ROOT_DIR}:/app" -w /app "${IMAGE_NAME}" python -m pylint app/ tests/
     ;;
   bash)
     docker run --rm -it -v "${ROOT_DIR}:/app" -w /app "${IMAGE_NAME}" bash

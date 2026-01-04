@@ -1,20 +1,9 @@
 from fastapi.testclient import TestClient
 
 from app.main import app
+from conftest import initial_board_matrix
+
 client = TestClient(app)
-
-
-def initial_board_matrix():
-    return [
-        list("rnbqkbnr"),
-        list("pppppppp"),
-        [None] * 8,
-        [None] * 8,
-        [None] * 8,
-        [None] * 8,
-        list("PPPPPPPP"),
-        list("RNBQKBNR"),
-    ]
 
 
 def test_illegal_move_no_piece():
@@ -245,6 +234,27 @@ def test_engine_move_invalid_depth():
     r = client.post("/api/move", json=payload)
     assert r.status_code == 400
     assert r.json()["detail"] == "invalid_depth"
+
+
+def test_engine_move_no_legal_moves_returns_flag():
+    board = [[None] * 8 for _ in range(8)]
+    board[0][0] = "k"
+    board[1][1] = "Q"
+    board[2][2] = "K"
+    payload = {
+        "board": board,
+        "turn": "black",
+        "castling": "-",
+        "en_passant": None,
+        "halfmove": 0,
+        "fullmove": 1,
+        "depth": 1,
+    }
+    r = client.post("/api/move", json=payload)
+    assert r.status_code == 200
+    data = r.json()
+    assert data["move"] is None
+    assert data["no_legal_moves"] is True
 
 
 def test_validate_move_invalid_coordinates():

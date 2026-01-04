@@ -160,8 +160,7 @@ def minimax(
                 beta,
             )
             nodes += child_nodes
-            if score > value:
-                value = score
+            value = max(value, score)
             alpha = max(alpha, value)
             if beta <= alpha:
                 break
@@ -193,8 +192,7 @@ def minimax(
             beta,
         )
         nodes += child_nodes
-        if score < value:
-            value = score
+        value = min(value, score)
         beta = min(beta, value)
         if beta <= alpha:
             break
